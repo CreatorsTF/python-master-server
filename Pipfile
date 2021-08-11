@@ -6,9 +6,5 @@ name = "pypi"
 [packages]
 requests = "*"
 python-a2s = "*"
-socket = "*"
 colorama = "*"
-signal = "*"
 Pipfile = "*"
-
-[dev-packages]
