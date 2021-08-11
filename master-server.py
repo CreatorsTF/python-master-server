@@ -8,8 +8,13 @@ import sys
 import signal
 #from discord_webhook import DiscordWebhook, DiscordEmbed
 
-# i already deleted this so dont bother
-#webhook = DiscordWebhook(url='https://canary.discord.com/api/webhooks/874855141075984435/q_YE9jAoQN8fwdOh9n2a4cLg8sCXfPSllEK8a6wd-3sD0goyfJesTaJDgsYMF2_Zo_M9')
+#try:
+#    config = json.load(open("config.json", 'r'))
+#    webhook = config["webhook"]
+#except Exception as e:
+#    print(f"Failed to load config and grab Discord URL: {e}")
+
+#webhook = DiscordWebhook(url={}.format(webhook))
 #
 ## create embed object for webhook
 ## you can set the color as a decimal (color=242424) or hex (color='03b2f8') number
