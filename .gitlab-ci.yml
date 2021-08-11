@@ -1,0 +1,8 @@
+stages:
+  - deploy
+
+deploy-job:
+  stage: deploy
+  script:
+    - cd /srv/daemon-data/6ebb6f2f-cd3a-4d9c-b256-2b28984e83a6/;
+    - git pull -f
