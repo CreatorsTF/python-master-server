@@ -7,6 +7,18 @@ from colorama import Fore
 import sys
 import signal
 
+#import logging
+#import sys
+
+#root = logging.getLogger()
+#root.setLevel(logging.DEBUG)
+
+#handler = logging.StreamHandler(sys.stdout)
+#handler.setLevel(logging.DEBUG)
+#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#handler.setFormatter(formatter)
+#root.addHandler(handler)
+
 #from discord_webhook import DiscordWebhook, DiscordEmbed
 
 #try:
@@ -80,10 +92,11 @@ while True:
 
         # Loop through all the returned servers and request information for them.
         for server in serverList["servers"]:
+            print(server["ip"], server["port"])
             serverstr = str(server['ip']) + ":" + str(server['port'])
             try:
                 serverID = server["id"]
-                timeout = 2.0
+                timeout = 3.0
                 a2sInfoRequest = a2s.info((server["ip"], server["port"]), timeout)
 
                 # Construct a JSON object with all of our server information.
@@ -92,15 +105,15 @@ while True:
                     "online":           a2sInfoRequest.player_count,
                     "maxplayers":       a2sInfoRequest.max_players,
                     "map":              a2sInfoRequest.map_name,
-                    "keywords":         a2sInfoRequest.keywords,
-                    "bots":             a2sInfoRequest.bot_count,
-                    "game":             a2sInfoRequest.game,
-                    "appid":            a2sInfoRequest.app_id,
-                    "version":          a2sInfoRequest.version,
-                    "passworded":       a2sInfoRequest.password_protected,
-                    "vac_secure":       a2sInfoRequest.vac_enabled,
-                    "sourcetv_port":    a2sInfoRequest.stv_port,
-                    "sourcetv_name":    a2sInfoRequest.stv_name,
+                    #"keywords":         a2sInfoRequest.keywords,
+                    #"bots":             a2sInfoRequest.bot_count,
+                    #"game":             a2sInfoRequest.game,
+                    #"appid":            a2sInfoRequest.app_id,
+                    #"version":          a2sInfoRequest.version,
+                    #"passworded":       a2sInfoRequest.password_protected,
+                    #"vac_secure":       a2sInfoRequest.vac_enabled,
+                    #"sourcetv_port":    a2sInfoRequest.stv_port,
+                    #"sourcetv_name":    a2sInfoRequest.stv_name,
                 }
 
                 # This could totally have more support for more data later like
@@ -118,6 +131,8 @@ while True:
 
                 print(Fore.GREEN + f"[SUCCESS] {serverstr}: {a2sInfoRequest.server_name}, {a2sInfoRequest.player_count}/{a2sInfoRequest.max_players}" + Fore.RESET)
 
+            #except BrokenMessageError:
+            #    print("a")
             except socket.timeout:
                 print(Fore.RED + f"[TIMEOUT] {serverstr}" + Fore.RESET)
             except ConnectionRefusedError:
