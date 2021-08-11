@@ -20,3 +20,4 @@ push-to-gh:
       fi
       echo "-> pushing to gh";
       git push origin-gh --force --progress --verbose --verbose --verbose;
+  tags: [worker]
