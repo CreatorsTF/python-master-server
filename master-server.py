@@ -6,8 +6,9 @@ import socket
 from colorama import Fore
 import sys
 import signal
-from discord_webhook import DiscordWebhook, DiscordEmbed
+#from discord_webhook import DiscordWebhook, DiscordEmbed
 
+# i already deleted this so dont bother
 #webhook = DiscordWebhook(url='https://canary.discord.com/api/webhooks/874855141075984435/q_YE9jAoQN8fwdOh9n2a4cLg8sCXfPSllEK8a6wd-3sD0goyfJesTaJDgsYMF2_Zo_M9')
 #
 ## create embed object for webhook
@@ -19,6 +20,7 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 
 # Creators.TF Master Server
 # Written by ZoNiCaL.
+# edited by sapphonie
 # Purpose: Updates the Creators.TF database with the latest website information.
 
 # Currently, we only care about a few providers in our network, that being
