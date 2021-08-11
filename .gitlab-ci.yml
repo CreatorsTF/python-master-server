@@ -1,9 +1,22 @@
 stages:
   - deploy
+  - gh
 
 deploy-job:
   stage: deploy
   script:
     - cd /srv/daemon-data/6ebb6f2f-cd3a-4d9c-b256-2b28984e83a6/;
-    - git pull -f
+    - git pull -f;
   tags: [worker]
+
+push-to-gh:
+  stage: gh
+  script:
+    - |
+      cd /srv/daemon-data/6ebb6f2f-cd3a-4d9c-b256-2b28984e83a6/;
+      if ! git remote | grep origin-gh > /dev/null; then
+        echo "-> adding gh remote";
+        git remote add origin-gh git@github.com:CreatorsTF/python-master-server.git;
+      fi
+      echo "-> pushing to gh";
+      git push origin-gh --force --progress --verbose --verbose --verbose;
