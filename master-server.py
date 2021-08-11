@@ -6,6 +6,7 @@ import socket
 from colorama import Fore
 import sys
 import signal
+
 #from discord_webhook import DiscordWebhook, DiscordEmbed
 
 #try:
@@ -145,7 +146,7 @@ while True:
             print(e)
             continue
 
-    # stupid bad code
+    # stupid bad code awful dogshit don't do this
     seconds = "";
     if sleeptime != 1:
         seconds = "s"
@@ -156,3 +157,4 @@ while True:
 
 os._exit(1)
 
+#TODO ctrl c handling
