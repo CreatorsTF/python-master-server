@@ -92,6 +92,8 @@ while True:
 
         # Loop through all the returned servers and request information for them.
         for server in serverList["servers"]:
+            # sleep so we dont spam servers
+            time.sleep(1)
             print(server["ip"], server["port"])
             serverstr = str(server['ip']) + ":" + str(server['port'])
             try:
