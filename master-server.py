@@ -48,7 +48,7 @@ import signal
 providers = [ 15, 1756, 11919, 78132 ]
 
 # time to sleep after running thru all providers
-sleeptime = 10;
+sleeptime = 60;
 
 # Custom exception class to diagnose problems that specifically happen with the
 # Creators.TF API. This could help diagnose problems later if needed.
@@ -98,7 +98,7 @@ while True:
             serverstr = str(server['ip']) + ":" + str(server['port'])
             try:
                 serverID = server["id"]
-                timeout = 3.0
+                timeout = 10.0
                 a2sInfoRequest = a2s.info((server["ip"], server["port"]), timeout)
 
                 # Construct a JSON object with all of our server information.
@@ -106,7 +106,7 @@ while True:
                     "hostname":         a2sInfoRequest.server_name,
                     "online":           a2sInfoRequest.player_count,
                     "maxplayers":       a2sInfoRequest.max_players,
-                    "map":              a2sInfoRequest.map_name,
+                    "map":              a2sInfoRequest.map_name
                     #"keywords":         a2sInfoRequest.keywords,
                     #"bots":             a2sInfoRequest.bot_count,
                     #"game":             a2sInfoRequest.game,
