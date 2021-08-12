@@ -1,3 +1,4 @@
+import os
 import a2s
 import requests
 import json
@@ -41,35 +42,58 @@ import signal
 # edited by sapphonie
 # Purpose: Updates the Creators.TF database with the latest website information.
 
-# Currently, we only care about a few providers in our network, that being
-# Creators.TF, Balance Mod, Silly Events servers, and Creators.TF Vanilla+.
-# For now, we don't have a way to grab providers dynamically, so we'll just
-# hardcode them until we decide to flesh out providers more.
-providers = [ 15, 1756, 11919, 78132 ]
-
-# time to sleep after running thru all providers
-sleeptime = 10;
-
 # Custom exception class to diagnose problems that specifically happen with the
 # Creators.TF API. This could help diagnose problems later if needed.
 # ^^^ ??? what??
 class CreatorsTFAPIError(BaseException):
     pass
 
-# Import a config file that has our Master API key. This allows the website to
-# recognise us when we make requests.
-masterKey = ""
 
+masterKey = ""
 try:
-    config = json.load(open("config.json", 'r'))
-    masterKey = config["key"]
+    configFile = json.load(open("config.json", 'r'))
 except Exception as e:
-    print(f"Failed to load config and grab API key: {e}")
+    pass
+def GetConfigValue(key, default):
+    if key in configFile.keys():
+        if key is not "":
+            return configFile[key]
+    return os.getenv(key, default)
+
+def GetConfigValueList(key, default):
+    value = GetConfigValue(key, default)
+    if isinstance(value, list):
+        return value
+    return value.split(',')
+
+class config():
+    SLEEPTIME = GetConfigValue("sleeptime", 10)
+    # Master API key. This allows the website to
+    # recognise us when we make requests.
+    MASTERKEY = GetConfigValue("masterKey", GetConfigValue("key", None))
+    # Currently, we only care about a few providers in our network, that being
+    # Creators.TF, Balance Mod, Silly Events servers, and Creators.TF Vanilla+.
+    # For now, we don't have a way to grab providers dynamically
+    PROVIDERS = GetConfigValue("providers", [ 15, 1756, 11919, 78132 ])
+
+if config.MASTERKEY is None:
+    print(f"Failed to load config and grab API key")
     quit()
 
-while True:
+
+isRunning = True
+
+def signal_handler(sig, frame):
+    global isRunning
+    print('You pressed Ctrl+C!')
+    print('stoping when done')
+    isRunning = False
+
+signal.signal(signal.SIGINT, signal_handler)
+
+while isRunning:
     # Grab our server list with an HTTP request.
-    for provider in providers:
+    for provider in config.PROVIDERS:
         requestURL = f"https://creators.tf/api/IServers/GServerList?provider={provider}"
         # Make an API request to the website.
         try:
@@ -162,14 +186,12 @@ while True:
             continue
 
     # stupid bad code awful dogshit don't do this
-    seconds = "";
-    if sleeptime != 1:
+    seconds = ""
+    if config.SLEEPTIME != 1:
         seconds = "s"
 
-    print(Fore.MAGENTA + f"Sleeping for {int(sleeptime)} second{seconds}..."  + Fore.RESET)
-    time.sleep(int(sleeptime));
+    print(Fore.MAGENTA + f"Sleeping for {int(config.SLEEPTIME)} second{seconds}..."  + Fore.RESET)
+    time.sleep(int(config.SLEEPTIME))
 
-
-os._exit(1)
-
-#TODO ctrl c handling
+if isRunning is False:
+    os._exit(1)
