@@ -6,6 +6,7 @@ import socket
 from colorama import Fore
 import sys
 import signal
+import asyncio
 
 #import logging
 #import sys
@@ -86,10 +87,10 @@ def GrabServersForProvider(providerID):
     return serverList["servers"]
 
 # This function queries our server with A2S and returns a dict with all of the server information.
-def QueryServer(serverID, serverInfo):
+async def QueryServer(serverID, serverInfo):
     try:
         timeout = 3
-        a2sInfoRequest = a2s.info(serverInfo, timeout)
+        a2sInfoRequest = await a2s.ainfo(serverInfo, timeout)
 
         # Construct a JSON object with all of our server information.
         info = {
@@ -123,7 +124,8 @@ def QueryServer(serverID, serverInfo):
         # Woo! Success! Log it.
         print(Fore.GREEN + f"[SUCCESS] {serverInfo}: {a2sInfoRequest.server_name}, {a2sInfoRequest.player_count}/{a2sInfoRequest.max_players}" + Fore.RESET)
         return serverToSend
-
+    except asyncio.TimeoutError:
+        print(Fore.RED + f"[TIMEOUT] {serverInfo}" + Fore.RESET)
     except socket.timeout:
         print(Fore.RED + f"[TIMEOUT] {serverInfo}" + Fore.RESET)
     except ConnectionRefusedError:
@@ -133,7 +135,7 @@ def QueryServer(serverID, serverInfo):
     except OSError:
         print(Fore.RED + f"[OSERROR] {serverInfo}" + Fore.RESET)
 
-def SendServersToHeartbeat(servers):
+async def SendServersToHeartbeat(servers):
     print(Fore.YELLOW + f"[PENDING] Sending block of {len(servers)} servers to api/IServers/GHeartbeat..."  + Fore.RESET)
 
     # We've now got a list of servers to send. Create a request to the
@@ -163,11 +165,70 @@ def SendServersToHeartbeat(servers):
 
     print(Fore.GREEN + f"[SUCCESS] Sent! Block of {len(servers)} servers arrived to api/IServers/GHeartbeat..."  + Fore.RESET)
 
-def MasterServer():
+async def MasterServer():
+    providerServers = {}
+    for provider in providers: 
+        providerServers[provider] = GrabServersForProvider(provider)
+
+        # Sort out our servers into IP blocks. We'll ideally query one server per region
+        # for each query block.
+        servers = providerServers[provider]
+        serversbyIP = {}
+
+        for server in servers:
+            # Grab the first three characters of our IP. This will help us
+            # sort our servers into blocks, and we'll iterate over each block
+            # when we query servers.
+            serverIP = server["ip"]
+            serverUniqueID = serverIP[0:3]
+            if (serverUniqueID not in serversbyIP):
+                # Create a new list to put our servers in.
+                serversbyIP[serverUniqueID] = []
+
+            # Add our server by IP to this list.
+            serversbyIP[serverUniqueID].append(server)
+
+        # Grab our total amount of servers.
+        total = 0
+        for ID in serversbyIP:
+            total += len(serversbyIP[ID])
+
+        serversSorted = 0
+        servers = []
+
+        # Grab a server, one by one, from each region and remove it.
+        # Lets say we have 6 unique IP's with the amount of servers being
+        # 6, 6, 3, 3, 3, 4. Goto the first one, take the first server, and rmeove
+        # it from the list and put it into our final sorted list. Goto the next
+        # server list, pop the first one, add it to the final sorted list, repeat.
+
+        # While the amount of the servers we've put into the list doesn't
+        # match our full total.
+        while serversSorted != total:
+            for group in serversbyIP:
+                # If we don't have anymore servers in this group,
+                # don't worry about it in the future by deleting it
+                # from the dict.
+                if len(serversbyIP[group]) == 0:
+                    del serversbyIP[group]
+                    break # Break the for loop here to prevent a RuntimeError.
+
+                # Grab the very first server and "pop" it, removing it
+                # from the list while grabbing it at the same time.
+                server = serversbyIP[group].pop(0)
+                servers.append(server)
+
+                serversSorted += 1
+
+        print(total, serversSorted)
+
+        # All the servers have been sorted, set this list for our provider.
+        providerServers[provider] = servers
+
     while True:
         # Grab our server list with an HTTP request.
-        for provider in providers: 
-            servers = GrabServersForProvider(provider)
+        for provider in providers:
+            servers = providerServers[provider]
 
             # We now have a list of servers. We're going to create blocks where we'll query
             # a block of servers and ship them off in a request. By default, we'll have
@@ -176,33 +237,47 @@ def MasterServer():
             # a provider, that's alright, we'll send them anyways.
             serverBlock = []
 
+            # If we've recently pinged this server with A2S, we'll add a delay
+            # so we have the best chance of getting server information. Only the latest
+            # four servers will be here.
+            recentServers = []
+
             for server in servers:
-                # Take a second to breathe so we don't spam our servers too much.
-                time.sleep(2.0)
+                serverUniqueID = server["ip"][0:3]
+                if serverUniqueID in recentServers:
+                    print(Fore.YELLOW + f"[PENDING] Resting {server['ip']}:{server['port']} for three seconds."  + Fore.RESET)
+                    # Add a delay of three seconds so we don't spam this IP too much.
+                    await asyncio.sleep(3)
 
                 # Okay, now lets send a query to the server asking for information.
-                result = QueryServer(server["id"], (server["ip"], server["port"]))
+                result = await QueryServer(server["id"], (server["ip"], server["port"]))
+
+                # If we're already at four entires in our recent servers list,
+                # remove the first one and add in this servers unique ID.
+                recentServers.append(serverUniqueID)
+                
+                if len(recentServers) >= 4:
+                    recentServers.remove(recentServers[0])
 
                 # Do we have a block of five servers we can ship off?
                 if (len(serverBlock) <= 5): # No? Append the list.
                     if result != None:
                         serverBlock.append(result)
                 else: # We already have a block of five servers, ship it off.
-                    SendServersToHeartbeat(serverBlock)
+                    await SendServersToHeartbeat(serverBlock)
                     serverBlock.clear()
-
                     # Add this server to the list afterwards as well.
                     if result != None:
                         serverBlock.append(result)
 
             # If we have any servers remaining in our server block, just send them over.
             if (len(serverBlock) != 0):
-                SendServersToHeartbeat(serverBlock)
+                await SendServersToHeartbeat(serverBlock)
 
         print(Fore.MAGENTA + f"Sleeping for {int(sleeptime)} seconds..."  + Fore.RESET)
-        time.sleep(int(sleeptime))
+        await asyncio.sleep(int(sleeptime))
 
 if (__name__ == "__main__"):
-    MasterServer()
+    asyncio.run(MasterServer())
 
 #TODO ctrl c handling
