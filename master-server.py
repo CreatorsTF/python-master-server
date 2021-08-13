@@ -48,7 +48,7 @@ import signal
 providers = [ 15, 1756, 11919, 78132 ]
 
 # time to sleep after running thru all providers
-sleeptime = 60;
+sleeptime = 10
 
 # Custom exception class to diagnose problems that specifically happen with the
 # Creators.TF API. This could help diagnose problems later if needed.
@@ -139,10 +139,17 @@ def SendServersToHeartbeat(servers):
     # We've now got a list of servers to send. Create a request to the
     # website API that updates server information in the database.
     requestURL = f"https://creators.tf/api/IServers/GHeartbeat"
+
+    # Create our JSON payload:
+    payload = {
+        "key": masterKey,
+        "servers": servers
+    }
+
     # Make an API request to the website.
     try:
         req = requests.post(requestURL,
-            data={ "servers": json.dumps(servers), "key": masterKey })
+            json=payload, headers={"Content-Type": "application/json"})
         resp = req.json()   # Return a JSON object which we can iterate over.
         print(resp)
 
@@ -177,7 +184,7 @@ def MasterServer():
                 result = QueryServer(server["id"], (server["ip"], server["port"]))
 
                 # Do we have a block of five servers we can ship off?
-                if (len(serverBlock) <= 0): # No? Append the list.
+                if (len(serverBlock) <= 5): # No? Append the list.
                     if result != None:
                         serverBlock.append(result)
                 else: # We already have a block of five servers, ship it off.
