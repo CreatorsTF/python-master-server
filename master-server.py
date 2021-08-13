@@ -252,11 +252,11 @@ async def MasterServer():
                 # Okay, now lets send a query to the server asking for information.
                 result = await QueryServer(server["id"], (server["ip"], server["port"]))
 
-                # If we're already at six entires in our recent servers list,
+                # If we're already at 10 entires in our recent servers list,
                 # remove the first one and add in this servers unique ID.
                 recentServers.append(serverUniqueID)
                 
-                if len(recentServers) >= 6:
+                if len(recentServers) >= 10:
                     recentServers.remove(recentServers[0])
 
                 # Do we have a block of five servers we can ship off?
