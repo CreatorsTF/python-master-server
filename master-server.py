@@ -245,18 +245,19 @@ async def MasterServer():
             for server in servers:
                 serverUniqueID = server["ip"][0:3]
                 if serverUniqueID in recentServers:
-                    print(Fore.YELLOW + f"[PENDING] Resting {server['ip']}:{server['port']} for three seconds."  + Fore.RESET)
-                    # Add a delay of three seconds so we don't spam this IP too much.
-                    await asyncio.sleep(3)
+                    print(Fore.YELLOW + f"[PENDING] Resting {server['ip']}:{server['port']} for one second."  + Fore.RESET)
+                    # Add a delay of two seconds so we don't spam this IP too much.
+                    await asyncio.sleep(1)
 
                 # Okay, now lets send a query to the server asking for information.
                 result = await QueryServer(server["id"], (server["ip"], server["port"]))
 
-                # If we're already at 8 entires in our recent servers list,
+                # If we're already at 5 entires in our recent servers list,
                 # remove the first one and add in this servers unique ID.
-                recentServers.append(serverUniqueID)
+                if serverUniqueID not in recentServers:
+                    recentServers.append(serverUniqueID)
                 
-                if len(recentServers) > 8:
+                if len(recentServers) > 5:
                     recentServers.remove(recentServers[0])
 
                 # Do we have a block of ten servers we can ship off?
@@ -266,6 +267,7 @@ async def MasterServer():
                 else: # We already have a block of five servers, ship it off.
                     await SendServersToHeartbeat(serverBlock)
                     serverBlock.clear()
+                    recentServers.clear()
                     # Add this server to the list afterwards as well.
                     if result != None:
                         serverBlock.append(result)
@@ -273,9 +275,11 @@ async def MasterServer():
             # If we have any servers remaining in our server block, just send them over.
             if (len(serverBlock) != 0):
                 await SendServersToHeartbeat(serverBlock)
+                recentServers.clear()
 
         print(Fore.MAGENTA + f"Sleeping for {int(sleeptime)} seconds..."  + Fore.RESET)
         await asyncio.sleep(int(sleeptime))
+        recentServers.clear()
 
 if (__name__ == "__main__"):
     asyncio.run(MasterServer())
